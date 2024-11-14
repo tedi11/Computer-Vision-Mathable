@@ -1,0 +1,91 @@
+solutia de mai jos merge, are problema la patratele galbene, aparent mai buleste cica la f7 f8 pe test2 si test3 dar pe test1 merge?
+
+
+import cv2 as cv
+import numpy as np
+
+def show_image(title, image):
+    image = cv.resize(image, (0, 0), fx=0.3, fy=0.3)
+    cv.imshow(title, image)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
+
+def extrage_careu(image):
+    if image is None:
+        print("Error: Image not loaded.")
+        return None
+    blue_channel, green_channel, red_channel = cv.split(image)
+    gray = blue_channel
+    blurred = cv.GaussianBlur(gray, (5, 5), 7)
+    _, thresh = cv.threshold(blurred, 150, 255, cv.THRESH_BINARY)
+
+    contours, _ = cv.findContours(thresh, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
+    max_contour = max(contours, key=cv.contourArea)
+
+    x, y, w, h = cv.boundingRect(max_contour)
+    cropped_board = image[y+260:y+h-250, x+260:x+w-260]
+    #show_image('cropped_board',cropped_board)
+    return cropped_board
+
+def extrage_piese(img1, img2):
+    cropped_board1 = extrage_careu(img1)
+    cropped_board2 = extrage_careu(img2)
+    width1, height1 = cropped_board1.shape[:2]
+    width2, height2 = cropped_board2.shape[:2]
+    medie = []
+    for i in range (0, 14):
+        for j in range (0, 14):
+            piece1 = cropped_board1[0 + i * (height1//14): (i+1) *(height1//14), 0 + j * (width1//14): (j+1) *(width1//14)]
+            piece2 = cropped_board2[0 + i * (height2//14): (i+1) *(height2//14), 0 + j * (width2//14): (j+1) *(width2//14)]
+            blue_channel, green_channel, red_channel = cv.split(piece1)
+            _, thresh1 = cv.threshold(blue_channel, 100, 255, cv.THRESH_BINARY)
+            blue_channel, green_channel, red_channel = cv.split(piece2)
+            _, thresh2 = cv.threshold(blue_channel, 100, 255, cv.THRESH_BINARY)
+            Medie_patch1=np.mean(thresh1)
+            Medie_patch2=np.mean(thresh2)
+            medie.append((Medie_patch2-Medie_patch1, i+1, chr(j+65)))
+
+    minn = 0
+    for val in medie:
+        if val[0] < minn:
+            minn = val[0]
+
+    for val in medie:
+        if val[0] == minn:
+            return val[1], val[2]
+
+def extrage_patrat(img1, img2, a, b):
+    width1, height1 = img1.shape[:2]
+    width2, height2 = img2.shape[:2]
+    i,j = a,b
+    piece1 = img1[0 + i * (height1//14)+0: (i+1) *(height1//14)-0, 0 + j * (width1//14)+0: (j+1) *(width1//14)-0]
+    piece2 = img2[0 + i * (height2//14)+0: (i+1) *(height2//14)-0, 0 + j * (width2//14)+0: (j+1) *(width2//14)-0]
+    blue_channel, green_channel, red_channel = cv.split(piece1)
+    _, piece1 = cv.threshold(blue_channel, 100, 255, cv.THRESH_BINARY)
+    blue_channel, green_channel, red_channel = cv.split(piece2)
+    _, piece2 = cv.threshold(blue_channel, 100, 255, cv.THRESH_BINARY)
+    show_image('piece1',piece1)
+    show_image('piece2',piece2)
+for i in range(1,50):
+    mutari = []
+    j = i + 1
+    if i < 9:
+        img1 = cv.imread(f"antrenare/1_0{i}.jpg")
+        img2 = cv.imread(f"antrenare/1_0{j}.jpg")
+        a,b = (extrage_piese(img1, img2))
+        mutari.append([j,f"{a}{b} 1"])
+        #extrage_patrat(extrage_careu(img1), extrage_careu(img2),a-1, ord(b)-65)
+    elif i == 9:
+        img1 = cv.imread(f"antrenare/1_0{i}.jpg")
+        img2 = cv.imread(f"antrenare/1_10.jpg")
+        a,b = (extrage_piese(img1, img2))
+        mutari.append([j,f"{a}{b} 1"])
+        #extrage_patrat(extrage_careu(img1), extrage_careu(img2),a-1, ord(b)-65)
+    else:
+        img1 = cv.imread(f"antrenare/1_{i}.jpg")
+        img2 = cv.imread(f"antrenare/1_{j}.jpg")
+        a,b = (extrage_piese(img1, img2))
+        mutari.append([j,f"{a}{b} 1"])
+        #extrage_patrat(extrage_careu(img1), extrage_careu(img2),a-1, ord(b)-65)
+
+    print (mutari[0][1][:3])
